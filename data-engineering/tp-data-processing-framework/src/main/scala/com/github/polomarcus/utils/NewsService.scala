@@ -4,7 +4,7 @@ import com.typesafe.scalalogging.Logger
 import com.github.polomarcus.model.News
 import org.apache.spark.sql.{Dataset, SparkSession}
 import org.apache.spark.sql.functions.{col, to_timestamp}
-
+import com.github.polomarcus.utils.{ClimateService, NewsService, SparkService}
 import scala.util.matching.Regex
 
 object NewsService {
@@ -24,6 +24,7 @@ object NewsService {
    */
   def enrichNewsWithClimateMetadata(newsDataset: Dataset[News]) : Dataset[News] = {
     newsDataset.map { news =>
+      val containsWordGlobalWarming = ClimateService.isClimateRelated(news.title) || ClimateService.isClimateRelated(news.description)
       val enrichedNews = News(
         news.title,
         news.description,
@@ -35,7 +36,7 @@ object NewsService {
         news.editorDeputy,
         news.url,
         news.urlTvNews,
-        news.containsWordGlobalWarming, // @TODO: we need to apply a function here from ClimateService
+        containsWordGlobalWarming,
         news.media
       )
 
@@ -52,9 +53,7 @@ object NewsService {
    * @return newsDataset but with containsWordGlobalWarming to true
    */
   def filterNews(newsDataset: Dataset[News]) : Dataset[News] = {
-    newsDataset.filter { news =>
-      ??? //@TODO complete here
-    }
+      newsDataset.filter(_.containsWordGlobalWarming)
   }
 
   /**
@@ -66,7 +65,6 @@ object NewsService {
    * @return Boolean True
    */
   def getNumberOfNews(dataset: Dataset[News]): Long = {
-    //@TODO look a the Spark API to know how to count
-    return 1 // code here
+    return dataset.count()
   }
 }
